@@ -67,7 +67,7 @@ def model_fn(features, labels, mode, params):
                                                    input_shape=(input_size, input_size, 3),
                                                    pooling=None)
 
-    # base_model.output == base_model.layers[22].output: [batch_size, 512]
+    # base_model.output == base_model.layers[21].output: [batch_size, 7, 7, 512]
     start_from = base_model.output
     start_from = tf.layers.flatten(start_from)
 
