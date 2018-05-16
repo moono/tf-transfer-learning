@@ -5,7 +5,7 @@
 * load pretrained weights from imagenet trained vgg19
 * vgg19.py
 * summary output
-![summary](./summary.png)
+![summary](./summary-vgg19.png)
 
 ## 2. tf.estimator + tensorflow hub
 * note: tensorflow >= 1.7
