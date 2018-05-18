@@ -28,14 +28,16 @@ def model_fn(features, labels, mode, params):
     batch_size = params['batch_size']
     initial_lr = params['initial_lr']
     n_train = params['n_train']
+    is_training = mode == tf.estimator.ModeKeys.TRAIN
 
     # preprocess input features for example
     inputs = tf.reshape(features['x'], shape=[-1, input_size, input_size, 3])
 
-    # very hard to fine tune existing network...it overfits
-    # module = hub.Module("https://tfhub.dev/google/imagenet/inception_v3/feature_vector/1",
-    #                     trainable=True, tags={'train'})
-    module = hub.Module("https://tfhub.dev/google/imagenet/inception_v3/feature_vector/1")
+    if is_training:
+        module = hub.Module("https://tfhub.dev/google/imagenet/inception_v3/feature_vector/1",
+                            trainable=True, tags={'train'})
+    else:
+        module = hub.Module("https://tfhub.dev/google/imagenet/inception_v3/feature_vector/1", trainable=True,)
 
     # outputs: [batch_size, 2048]
     start_from = module(inputs)
@@ -63,12 +65,13 @@ def model_fn(features, labels, mode, params):
     # logits: score not probability
     loss = tf.losses.sparse_softmax_cross_entropy(labels=labels, logits=logits)
 
-    # # add regularization loss - important in fine tuning
-    # # below will return regularization losses (acts same)
-    # # tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
-    # # tf.losses.get_regularization_losses()
-    # reg_losses = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
-    # loss += tf.add_n(reg_losses)
+    # add regularization loss - important in fine tuning
+    # below will return regularization losses as list (acts same)
+    # tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
+    # tf.losses.get_regularization_losses()
+    # below will return it's sum
+    # tf.losses.get_regularization_loss()
+    loss += tf.losses.get_regularization_loss()
 
     # compute evaluation metric
     accuracy = tf.metrics.accuracy(labels=labels, predictions=predicted_classes, name='acc_op')
@@ -124,11 +127,10 @@ def train(fresh_training, args):
     )
 
     # start training...
-    step = 10
-    for ii in range(0, args['epochs'], step):
+    for ii in range(args['epochs']):
         # train model
         model.train(
-            input_fn=lambda: data_input_fn_tf_hub(args['train_list'], args['n_train'], True, step,
+            input_fn=lambda: data_input_fn_tf_hub(args['train_list'], args['n_train'], True, 1,
                                                   args['batch_size'], args['input_size']),
         )
 
@@ -136,30 +138,6 @@ def train(fresh_training, args):
         eval_results = model.evaluate(input_fn=lambda: data_input_fn_tf_hub(args['eval_list'], args['n_val'],
                                                                             False, 1, 1, args['input_size']))
         print(eval_results)
-    return
-
-
-def test(args):
-    # create the Estimator
-    model = tf.estimator.Estimator(
-        model_fn=model_fn,
-        model_dir=args['model_dir'],
-        config=None,
-        params={
-            'input_size': args['input_size'],
-            'n_output_class': args['n_output_class'],
-            'batch_size': args['batch_size'],
-            'n_train': args['n_train'],
-            'initial_lr': args['initial_lr'],
-        },
-        warm_start_from=None
-    )
-
-    # evaluate the model and print results
-    eval_results = model.evaluate(
-        input_fn=lambda: data_input_fn_tf_hub(args['eval_list'], args['n_val'], False, 1, 1, args['input_size'])
-    )
-    print(eval_results)
     return
 
 
@@ -179,8 +157,6 @@ def main():
     }
 
     train(fresh_training=True, args=args)
-
-    test(args)
     return
 
 
