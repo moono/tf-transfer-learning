@@ -32,13 +32,13 @@ def random_flip_left_right_image(image):
     return image
 
 
-def preprocess_vgg19(image, label):
+def preprocess_keras_vgg19(image, label):
     # same as image-mean subtraction
     image = tf.keras.applications.vgg19.preprocess_input(image)
     return image, label
 
 
-def preprocess_inception_v3(image, label):
+def preprocess_tf_hub(image, label):
     # in order to get [0. ~ 1.] and wants to use tf.image.convert_image_dtype(),
     # one needs to first convert to uint8 datatype
     image = tf.cast(image, dtype=tf.uint8)
@@ -76,7 +76,7 @@ def parse_tfrecord(raw_record):
     return image, label
 
 
-def data_input_fn_vgg19(filename, n_images, is_training, num_epochs, batch_size, crop_size):
+def data_input_fn_keras_vgg19(filename, n_images, is_training, num_epochs, batch_size, crop_size):
     dataset = tf.data.TFRecordDataset(filename)
 
     if is_training:
@@ -84,7 +84,7 @@ def data_input_fn_vgg19(filename, n_images, is_training, num_epochs, batch_size,
 
     dataset = dataset.map(parse_tfrecord)
     dataset = dataset.map(lambda image, label: preprocess_fn(image, label, is_training, crop_size))
-    dataset = dataset.map(lambda image, label: preprocess_vgg19(image, label))
+    dataset = dataset.map(lambda image, label: preprocess_keras_vgg19(image, label))
     dataset = dataset.prefetch(batch_size)
     dataset = dataset.repeat(num_epochs)
     dataset = dataset.batch(batch_size)
@@ -98,7 +98,7 @@ def data_input_fn_vgg19(filename, n_images, is_training, num_epochs, batch_size,
     return features, labels
 
 
-def data_input_fn_inception_v3(filename, n_images, is_training, num_epochs, batch_size, crop_size):
+def data_input_fn_tf_hub(filename, n_images, is_training, num_epochs, batch_size, crop_size):
     dataset = tf.data.TFRecordDataset(filename)
 
     if is_training:
@@ -106,7 +106,7 @@ def data_input_fn_inception_v3(filename, n_images, is_training, num_epochs, batc
 
     dataset = dataset.map(parse_tfrecord)
     dataset = dataset.map(lambda image, label: preprocess_fn(image, label, is_training, crop_size))
-    dataset = dataset.map(lambda image, label: preprocess_inception_v3(image, label))
+    dataset = dataset.map(lambda image, label: preprocess_tf_hub(image, label))
     dataset = dataset.prefetch(batch_size)
     dataset = dataset.repeat(num_epochs)
     dataset = dataset.batch(batch_size)
@@ -125,6 +125,8 @@ def dataset_test(is_training, im_size, additional_preprocess):
 
     filenames_tensor = tf.placeholder(tf.string, shape=[None])
     dataset = tf.data.TFRecordDataset(filenames_tensor)
+
+    dataset = dataset.shuffle(buffer_size=1000)
     dataset = dataset.map(parse_tfrecord)
     dataset = dataset.map(lambda images, labels: preprocess_fn(images, labels, is_training, im_size))
     dataset = dataset.map(lambda images, labels: additional_preprocess(images, labels))
@@ -155,12 +157,12 @@ def dataset_test(is_training, im_size, additional_preprocess):
 def main():
     # im_size = 224
     # is_training = False
-    # additional_preprocess = preprocess_vgg19
+    # additional_preprocess = preprocess_keras_vgg19
     # dataset_test(is_training, im_size, additional_preprocess)
 
     im_size = 299
     is_training = True
-    additional_preprocess = preprocess_inception_v3
+    additional_preprocess = preprocess_tf_hub
     dataset_test(is_training, im_size, additional_preprocess)
     return
 

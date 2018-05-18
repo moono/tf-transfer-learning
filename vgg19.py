@@ -3,7 +3,7 @@ import shutil
 import tensorflow as tf
 from tensorflow.python.keras.backend import clear_session
 
-from flower_data_utils import data_input_fn_vgg19
+from flower_data_utils import data_input_fn_keras_vgg19
 
 tf.logging.set_verbosity(tf.logging.INFO)
 
@@ -116,8 +116,8 @@ def train(fresh_training, args):
 
     # train model
     model.train(
-        input_fn=lambda: data_input_fn_vgg19(args['train_list'], args['n_train'], True, args['epochs'],
-                                             args['batch_size'], args['input_size']),
+        input_fn=lambda: data_input_fn_keras_vgg19(args['train_list'], args['n_train'], True, args['epochs'],
+                                                   args['batch_size'], args['input_size']),
         hooks=None,
         steps=None
     )
@@ -139,65 +139,65 @@ def test(args):
 
     # evaluate the model and print results
     eval_results = model.evaluate(
-        input_fn=lambda: data_input_fn_vgg19(args['eval_list'], args['n_val'], False, 1, 1, args['input_size'])
+        input_fn=lambda: data_input_fn_keras_vgg19(args['eval_list'], args['n_val'], False, 1, 1, args['input_size'])
     )
     print(eval_results)
     return
 
 
 
-def get_trained_variable(args):
-    # create the Estimator
-    model = tf.estimator.Estimator(
-        model_fn=model_fn,
-        model_dir=args['model_dir'],
-        config=None,
-        params={
-            'input_size': args['input_size'],
-            'n_output_class': args['n_output_class'],
-        },
-        # warm_start_from=args['model_dir']
-        warm_start_from=None
-    )
-
-    # belowe raises
-    # ValueError: If the Estimator has not produced a checkpoint yet.
-    var_list = model.get_variable_names()
-
-    trained_block1_conv1_kernel = model.get_variable_value('block1_conv1/kernel')
-    trained_block1_conv1_bias = model.get_variable_value('block1_conv1/bias')
-    return trained_block1_conv1_kernel, trained_block1_conv1_bias
-
-
-def get_original_variables(args):
-    input_size = args['input_size']
-    inputs = tf.placeholder(tf.float32, shape=[None, input_size, input_size, 3])
-
-    # prepare pretrained network
-    base_model = tf.keras.applications.vgg19.VGG19(include_top=False,
-                                                   weights='imagenet',
-                                                   input_tensor=inputs,
-                                                   input_shape=(input_size, input_size, 3),
-                                                   pooling=None)
-    base_model.compile(optimizer=tf.keras.optimizers.SGD(lr=0.0001, momentum=0.9),
-                       loss='categorical_crossentropy',
-                       metric='accuracy')
-    model = tf.keras.estimator.model_to_estimator(keras_model=base_model)
-
-    var_list = model.get_variable_names()
-    original_block1_conv1_kernel = model.get_variable_value('block1_conv1/kernel')
-    original_block1_conv1_bias = model.get_variable_value('block1_conv1/bias')
-
-    return original_block1_conv1_kernel, original_block1_conv1_bias
-
-
-def check_variables(args):
-    trained_block1_conv1_kernel, trained_block1_conv1_bias = get_trained_variable(args)
-    original_block1_conv1_kernel, original_block1_conv1_bias = get_original_variables(args)
-
-    diff_conv1_kernel = original_block1_conv1_kernel - trained_block1_conv1_kernel
-    diff_conv1_bias = original_block1_conv1_bias - trained_block1_conv1_bias
-    return
+# def get_trained_variable(args):
+#     # create the Estimator
+#     model = tf.estimator.Estimator(
+#         model_fn=model_fn,
+#         model_dir=args['model_dir'],
+#         config=None,
+#         params={
+#             'input_size': args['input_size'],
+#             'n_output_class': args['n_output_class'],
+#         },
+#         # warm_start_from=args['model_dir']
+#         warm_start_from=None
+#     )
+#
+#     # belowe raises
+#     # ValueError: If the Estimator has not produced a checkpoint yet.
+#     var_list = model.get_variable_names()
+#
+#     trained_block1_conv1_kernel = model.get_variable_value('block1_conv1/kernel')
+#     trained_block1_conv1_bias = model.get_variable_value('block1_conv1/bias')
+#     return trained_block1_conv1_kernel, trained_block1_conv1_bias
+#
+#
+# def get_original_variables(args):
+#     input_size = args['input_size']
+#     inputs = tf.placeholder(tf.float32, shape=[None, input_size, input_size, 3])
+#
+#     # prepare pretrained network
+#     base_model = tf.keras.applications.vgg19.VGG19(include_top=False,
+#                                                    weights='imagenet',
+#                                                    input_tensor=inputs,
+#                                                    input_shape=(input_size, input_size, 3),
+#                                                    pooling=None)
+#     base_model.compile(optimizer=tf.keras.optimizers.SGD(lr=0.0001, momentum=0.9),
+#                        loss='categorical_crossentropy',
+#                        metric='accuracy')
+#     model = tf.keras.estimator.model_to_estimator(keras_model=base_model)
+#
+#     var_list = model.get_variable_names()
+#     original_block1_conv1_kernel = model.get_variable_value('block1_conv1/kernel')
+#     original_block1_conv1_bias = model.get_variable_value('block1_conv1/bias')
+#
+#     return original_block1_conv1_kernel, original_block1_conv1_bias
+#
+#
+# def check_variables(args):
+#     trained_block1_conv1_kernel, trained_block1_conv1_bias = get_trained_variable(args)
+#     original_block1_conv1_kernel, original_block1_conv1_bias = get_original_variables(args)
+#
+#     diff_conv1_kernel = original_block1_conv1_kernel - trained_block1_conv1_kernel
+#     diff_conv1_bias = original_block1_conv1_bias - trained_block1_conv1_bias
+#     return
 
 
 def main():
@@ -222,8 +222,8 @@ def main():
     clear_session()
     test(args)
 
-    clear_session()
-    check_variables(args)
+    # clear_session()
+    # check_variables(args)
     return
 
 
