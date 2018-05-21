@@ -5,9 +5,11 @@
 * load pretrained weights from imagenet trained vgg19
 * vgg19.py
 * summary output
-![summary](./summary-vgg19.png)
 
 ## 2. tf.estimator + tensorflow hub
 * note: tensorflow >= 1.7
-* load pretrained weights from imagenet trained inception_v3
-* inception_v3.py
+* load pretrained weights from imagenet trained inception_v3 && resnet_v2_101
+* inception_v3.py && resnet_v2_101.py
+
+## Tensoboard outputs
+![summary](./summary-all.png)
