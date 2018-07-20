@@ -85,9 +85,9 @@ def data_input_fn_keras_vgg19(filename, n_images, is_training, num_epochs, batch
     dataset = dataset.map(parse_tfrecord)
     dataset = dataset.map(lambda image, label: preprocess_fn(image, label, is_training, crop_size))
     dataset = dataset.map(lambda image, label: preprocess_keras_vgg19(image, label))
+    dataset = dataset.batch(batch_size)
     dataset = dataset.prefetch(batch_size)
     dataset = dataset.repeat(num_epochs)
-    dataset = dataset.batch(batch_size)
 
     iterator = dataset.make_one_shot_iterator()
     images, labels = iterator.get_next()
@@ -107,9 +107,9 @@ def data_input_fn_tf_hub(filename, n_images, is_training, num_epochs, batch_size
     dataset = dataset.map(parse_tfrecord)
     dataset = dataset.map(lambda image, label: preprocess_fn(image, label, is_training, crop_size))
     dataset = dataset.map(lambda image, label: preprocess_tf_hub(image, label))
+    dataset = dataset.batch(batch_size)
     dataset = dataset.prefetch(batch_size)
     dataset = dataset.repeat(num_epochs)
-    dataset = dataset.batch(batch_size)
 
     iterator = dataset.make_one_shot_iterator()
     images, labels = iterator.get_next()

@@ -127,7 +127,6 @@ def train(fresh_training, args):
             steps=None
         )
 
-
         clear_session()
 
         # evaluate the model and print results
